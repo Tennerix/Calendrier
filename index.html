@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calendrier des tournois de beach tennis</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --sable:#f6efe3; --carte:#ffffff; --texte:#1f2933; --gris:#6b7280; --bord:#e3dccd;
+    --mer:#0e7490; --hommes:#1d4ed8; --femmes:#be185d; --mixte:#7c3aed; --pdl:#eab308; --jeune:#ea580c; --ligue:#16a34a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--sable);color:var(--texte);line-height:1.4}
+  header{background:var(--mer);color:#fff;padding:18px 24px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+  header h1{margin:0;font-size:1.35rem}
+  .actions{display:flex;gap:8px;flex-wrap:wrap}
+  button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid transparent;padding:8px 14px;font-weight:600}
+  .btn-ex{background:#fff;color:var(--mer)}
+  .btn-ex:hover{background:#e6f6fa}
+  main{max-width:1200px;margin:0 auto;padding:20px;display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start}
+  @media(max-width:900px){main{grid-template-columns:1fr}}
+  .carte{background:var(--carte);border:1px solid var(--bord);border-radius:12px;padding:16px}
+  .carte h2{margin:0 0 12px;font-size:1.05rem}
+  label{display:block;font-size:.85rem;font-weight:600;margin:10px 0 4px}
+  input[type=text],input[type=date],select{width:100%;padding:8px 10px;border:1px solid #cfc7b5;border-radius:8px;font:inherit;background:#fff}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .cats{display:flex;gap:6px;flex-wrap:wrap}
+  .cats.ages label{flex:1 1 40%}
+  .cats.ages input:checked + span{background:#475569}
+  .cats .j input:checked + span{background:var(--jeune)}
+  .cats.ligues label{flex:1}
+  .cats.ligues .a input:checked + span{background:#475569}
+  .cats.ligues .p input:checked + span{background:var(--pdl);color:#1f2933}
+  .cats.ligues .o input:checked + span{background:var(--ligue)}
+  .aide{font-size:.75rem;color:var(--gris);margin-top:3px}
+  .cats label{margin:0;flex:1;font-weight:600}
+  .cats input{position:absolute;opacity:0}
+  .cats span{display:block;text-align:center;padding:8px 4px;border:2px solid #d8d0bd;border-radius:8px;cursor:pointer;font-size:.9rem}
+  .cats input:checked + span{color:#fff;border-color:transparent}
+  .cats .h input:checked + span{background:var(--hommes)}
+  .cats .f input:checked + span{background:var(--femmes)}
+  .cats .m input:checked + span{background:var(--mixte)}
+  .cats input:focus-visible + span{outline:2px solid var(--mer);outline-offset:2px}
+  .apercu{margin-top:8px;max-width:100%;max-height:180px;border-radius:8px;display:none;border:1px solid var(--bord)}
+  .form-btns{display:flex;gap:8px;margin-top:14px}
+  .btn-ok{background:var(--mer);color:#fff;flex:1}
+  .btn-ok:hover{background:#0b5d73}
+  .btn-sec{background:#fff;border-color:#cfc7b5;color:var(--texte)}
+  .erreur{color:#b91c1c;font-size:.85rem;margin-top:8px;min-height:1em}
+  .nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .nav h2{margin:0;font-size:1.2rem;text-transform:capitalize}
+  .nav .btns{display:flex;gap:6px}
+  .legende{display:flex;gap:14px;flex-wrap:wrap;font-size:.85rem;margin-bottom:10px}
+  .legende i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+  .grille{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid var(--bord);border-left:1px solid var(--bord)}
+  .jsem{background:#faf6ed;font-size:.8rem;font-weight:700;text-align:center;padding:6px 0;border-right:1px solid var(--bord);border-bottom:1px solid var(--bord)}
+  .jour{min-height:96px;border-right:1px solid var(--bord);border-bottom:1px solid var(--bord);padding:3px;overflow:hidden}
+  .jour.hors{background:#faf8f3;color:#b0a894}
+  .jour .num{font-size:.8rem;font-weight:600;margin-bottom:2px}
+  .jour.auj .num{display:inline-block;background:var(--mer);color:#fff;border-radius:10px;padding:0 6px}
+  .chip{display:block;width:100%;text-align:left;color:#fff;font-size:.72rem;font-weight:600;padding:2px 5px;margin-bottom:2px;border-radius:4px;border:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chip.H{background:var(--hommes)} .chip.F{background:var(--femmes)} .chip.M{background:var(--mixte)} .chip.X{background:var(--mer)} .chip.P{background:var(--pdl);color:#1f2933} .chip.L{background:var(--ligue)} .chip.J{background:var(--jeune)}
+  @media(max-width:600px){.jour{min-height:64px}.chip{font-size:.6rem;padding:1px 3px}}
+  table{width:100%;border-collapse:collapse;font-size:.9rem}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--bord);vertical-align:middle}
+  th{font-size:.78rem;color:var(--gris);text-transform:uppercase;letter-spacing:.03em}
+  .tag{display:inline-block;color:#fff;font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:10px}
+  .tag.H{background:var(--hommes)} .tag.F{background:var(--femmes)} .tag.M{background:var(--mixte)} .tag.A{background:#475569} .tag.P{background:var(--pdl);color:#1f2933} .tag.L{background:var(--ligue)} .tag.J{background:var(--jeune)}
+  .tags{display:flex;gap:4px;flex-wrap:wrap}
+  .mini{width:38px;height:38px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--bord)}
+  .lien{background:none;border:0;color:var(--mer);padding:2px 6px;font-weight:600}
+  .lien.sup{color:#b91c1c}
+  .vide{color:var(--gris);padding:14px 0}
+  .full{grid-column:1/-1}
+  dialog{border:0;border-radius:12px;padding:16px;max-width:min(92vw,720px);box-shadow:0 10px 40px rgba(0,0,0,.35)}
+  dialog::backdrop{background:rgba(0,0,0,.5)}
+  dialog img{max-width:100%;max-height:70vh;display:block;margin:10px auto}
+  .titre-print{display:none}
+  .bandeau{display:none;margin:0;padding:10px 24px;font-size:.9rem}
+  .bandeau.on{display:block}
+  .bandeau.info{background:#e0f2fe;color:#075985}
+  .bandeau.warn{background:#fef3c7;color:#92400e}
+  .bandeau.ok{background:#dcfce7;color:#166534}
+  .lecture main{display:block}
+  .lecture .formcarte,.lecture .col-actions,.lecture [data-edit-modal]{display:none!important}
+  .lecture .carte{margin-bottom:16px}
+  .export .titre-print{display:block;font-weight:700;font-size:1.3rem;margin-bottom:8px}
+  .export .nav .btns,.export .col-actions{display:none!important}
+  @media print{
+    @page{size:A4 landscape;margin:10mm}
+    body{background:#fff}
+    header,.formcarte,.nav .btns,.col-actions,dialog{display:none!important}
+    main{display:block;padding:0;max-width:none}
+    .carte{border:0;padding:0;margin-bottom:10px}
+    .titre-print{display:block;font-size:1.3rem;font-weight:700;margin-bottom:8px}
+    .jour{min-height:70px}
+    .chip,.tag,.cats span,.jour.auj .num,.legende i{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .liste{break-before:page}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎾 Calendrier des tournois de beach tennis</h1>
+  <div class="actions">
+    <button class="btn-ex" id="btnOrga">🔒 Mode organisateur</button>
+    <button class="btn-ex" id="btnXlsx">Exporter en Excel</button>
+    <button class="btn-ex" id="btnPdf">Exporter en PDF</button>
+  </div>
+</header>
+<div id="bandeau" class="bandeau" role="status"></div>
+
+<main>
+  <section class="carte formcarte">
+    <h2 id="formTitre">Ajouter un tournoi</h2>
+    <form id="form" autocomplete="off">
+      <label for="nom">Nom du tournoi</label>
+      <input type="text" id="nom" placeholder="Ex. Open de La Baule" required>
+
+      <label>Catégorie (une ou plusieurs)</label>
+      <div class="cats" id="catsGenre">
+        <label class="h"><input type="checkbox" name="genre" value="Hommes" checked><span>Hommes</span></label>
+        <label class="f"><input type="checkbox" name="genre" value="Femmes"><span>Femmes</span></label>
+        <label class="m"><input type="checkbox" name="genre" value="Mixte"><span>Mixte</span></label>
+        <label class="j"><input type="checkbox" name="genre" value="Jeune"><span>Jeune</span></label>
+      </div>
+
+      <label>Tranche d'âge (facultatif, plusieurs possibles)</label>
+      <div class="cats ages">
+        <label><input type="checkbox" name="age" value="Senior"><span>Senior</span></label>
+        <label><input type="checkbox" name="age" value="+45"><span>+45</span></label>
+        <label><input type="checkbox" name="age" value="U18"><span>U18</span></label>
+        <label><input type="checkbox" name="age" value="U14"><span>U14</span></label>
+      </div>
+
+      <label>Ligue (facultatif)</label>
+      <div class="cats ligues">
+        <label class="a"><input type="radio" name="ligue" value="" checked><span>Aucune</span></label>
+        <label class="p"><input type="radio" name="ligue" value="PDL"><span>Ligue PDL</span></label>
+        <label class="o"><input type="radio" name="ligue" value="Autre"><span>Autre ligue</span></label>
+      </div>
+
+      <div class="row2">
+        <div><label for="debut">Date de début</label><input type="date" id="debut" required></div>
+        <div><label for="fin">Date de fin</label><input type="date" id="fin" required></div>
+      </div>
+
+      <label for="lieu">Lieu (facultatif)</label>
+      <input type="text" id="lieu" placeholder="Ville, club…">
+
+      <label for="affiche">Affiche (image)</label>
+      <input type="file" id="affiche" accept="image/*">
+      <img id="apercu" class="apercu" alt="Aperçu de l'affiche">
+      <button type="button" class="lien" id="retirerImg" style="display:none">Retirer l'image</button>
+
+      <div class="erreur" id="erreur" role="alert"></div>
+      <div class="form-btns">
+        <button type="submit" class="btn-ok" id="btnOk">Ajouter au calendrier</button>
+        <button type="button" class="btn-sec" id="btnAnnuler" style="display:none">Annuler</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="carte" id="carteCal">
+    <div class="titre-print" id="titrePrint"></div>
+    <div class="nav">
+      <h2 id="moisTitre"></h2>
+      <div class="btns">
+        <button class="btn-sec" id="prec" aria-label="Mois précédent">←</button>
+        <button class="btn-sec" id="auj">Aujourd'hui</button>
+        <button class="btn-sec" id="suiv" aria-label="Mois suivant">→</button>
+      </div>
+    </div>
+    <div class="legende">
+      <span><i style="background:var(--hommes)"></i>Hommes</span>
+      <span><i style="background:var(--femmes)"></i>Femmes</span>
+      <span><i style="background:var(--mixte)"></i>Mixte</span>
+      <span><i style="background:var(--mer)"></i>Plusieurs catégories</span>
+      <span><i style="background:var(--pdl)"></i>Ligue des Pays de la Loire</span>
+      <span><i style="background:var(--ligue)"></i>Autres ligues</span>
+      <span><i style="background:var(--jeune)"></i>Jeune</span>
+    </div>
+    <div class="grille" id="grille"></div>
+  </section>
+
+  <section class="carte full liste" id="carteListe">
+    <h2>Tous les tournois</h2>
+    <div id="liste"></div>
+  </section>
+</main>
+
+<dialog id="orgaDlg">
+  <h2 style="margin:0 0 8px;font-size:1.1rem">Mode organisateur</h2>
+  <p style="margin:0 0 10px;font-size:.9rem;color:#6b7280">Saisis le code organisateur pour ajouter, modifier ou supprimer des tournois. Tout le monde peut consulter sans code.</p>
+  <form id="orgaForm">
+    <label for="orgaCode" style="margin-top:0">Code organisateur</label>
+    <input type="password" id="orgaCode" autocomplete="current-password" required>
+    <div class="erreur" id="orgaErr" role="alert"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><button type="button" class="btn-sec" id="orgaNon">Annuler</button><button type="submit" class="btn-ok" style="flex:none">Valider</button></div>
+  </form>
+</dialog>
+
+<dialog id="pdfDlg">
+  <h2 style="margin:0 0 8px;font-size:1.1rem">Exporter le calendrier en PDF</h2>
+  <p style="margin:0 0 10px;font-size:.9rem;color:#6b7280">Le PDF couvre toute la saison sportive, de septembre à août, avec un calendrier par mois et la liste des tournois.</p>
+  <label for="saisonSel" style="margin-top:0">Saison</label>
+  <select id="saisonSel"></select>
+  <div id="saisonInfo" style="font-size:.85rem;margin-top:8px;min-height:1.2em"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="btn-sec" id="pdfNon">Annuler</button><button class="btn-ok" id="pdfOui" style="flex:none">Générer le PDF</button></div>
+</dialog>
+
+<dialog id="confirmDlg">
+  <p id="confirmTxt" style="margin-top:0"></p>
+  <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn-sec" id="confirmNon">Annuler</button><button class="btn-ok" id="confirmOui" style="flex:none;background:#b91c1c">Supprimer</button></div>
+</dialog>
+
+<dialog id="modal">
+  <div id="modalContenu"></div>
+  <div style="text-align:right"><button class="btn-sec" id="fermer">Fermer</button></div>
+</dialog>
+
+<script>
+var API = "/api/tournois";
+(function(){
+  var MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+  var JOURS = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
+  var CLS = {Hommes:"H", Femmes:"F", Mixte:"M", Jeune:"J"};
+  function cl(t){ if(t.ligue==="PDL") return "P"; if(t.ligue==="Autre") return "L"; return t.cats.length===1 ? CLS[t.cats[0]] : "X"; }
+  function tagsHtml(t){
+    return '<div class="tags">'+(t.ligue==="PDL"?'<span class="tag P">Ligue PDL</span>':t.ligue==="Autre"?'<span class="tag L">Autre ligue</span>':'')+t.cats.map(function(c){return '<span class="tag '+CLS[c]+'">'+c+'</span>';}).join("")
+      + t.ages.map(function(a){return '<span class="tag A">'+esc(a)+'</span>';}).join("")+'</div>';
+  }
+  function libelle(t){ return (t.ligue==="PDL"?["Ligue PDL"]:t.ligue==="Autre"?["Autre ligue"]:[]).concat(t.cats, t.ages).join(", "); }
+  var KEY = "beachTennisTournois";
+  var tournois = [];
+  var editId = null;
+  var imgData = "";
+  var now = new Date();
+  var vue = {a: now.getFullYear(), m: now.getMonth()};
+
+  var $ = function(id){ return document.getElementById(id); };
+
+  var codeOrga = "", derniereV = null, dl = null, assetsApi = null, imgBlob = null, tBandeau = null;
+  function bandeau(txt, type, auto){
+    var b = $("bandeau"); clearTimeout(tBandeau);
+    if(!txt){ b.className = "bandeau"; b.textContent = ""; return; }
+    b.className = "bandeau on "+(type||"info"); b.textContent = txt;
+    if(auto) tBandeau = setTimeout(function(){ bandeau(""); }, auto);
+  }
+  function normaliser(d){
+    var t = Object.assign({}, d);
+    if(!t.cats) t.cats = t.cat ? [t.cat] : ["Mixte"];
+    if(!t.ages) t.ages = [];
+    if(!t.ligue) t.ligue = "";
+    if(t.ages.indexOf("Jeune")>-1){ t.ages = t.ages.filter(function(a){return a!=="Jeune";}); if(t.cats.indexOf("Jeune")<0) t.cats = t.cats.concat("Jeune"); }
+    return t;
+  }
+  function lectureSeule(oui){ document.body.classList.toggle("lecture", !!oui); }
+  var api = {
+    lire: function(){
+      return fetch(API, {cache:"no-store"}).then(function(r){ if(!r.ok) throw {code:"unavailable"}; return r.json(); });
+    },
+    version: function(){
+      return fetch(API+"?v=1", {cache:"no-store"}).then(function(r){ if(!r.ok) throw {code:"unavailable"}; return r.json(); });
+    },
+    ecrire: function(methode, corps){
+      return fetch(API, {method:methode, cache:"no-store", headers:{"content-type":"application/json","x-code":encodeURIComponent(codeOrga)}, body:JSON.stringify(corps)})
+        .then(function(r){
+          if(r.status === 401){ deverrouiller(); throw {code:"unauthorized"}; }
+          if(r.status === 400) throw {code:"invalid_argument"};
+          if(!r.ok) throw {code:"unavailable"};
+          return r.json();
+        });
+    }
+  };
+  function appliquer(d){
+    derniereV = d.v;
+    tournois = (d.items || []).map(normaliser);
+    tout();
+  }
+  function charger(){
+    return api.lire().then(function(d){ bandeau(""); appliquer(d); })
+      .catch(function(){ bandeau("Impossible de charger le calendrier partagé. Vérifie ta connexion.", "warn"); });
+  }
+  function synchro(){
+    if(document.hidden) return;
+    api.version().then(function(d){ if(d.v !== derniereV) charger(); }).catch(function(){});
+  }
+  function deverrouiller(){
+    codeOrga = "";
+    try { localStorage.removeItem("codeOrga"); } catch(e){}
+    lectureSeule(true);
+    $("btnOrga").textContent = "🔒 Mode organisateur";
+  }
+  function verrouillerOk(code){
+    codeOrga = code;
+    try { localStorage.setItem("codeOrga", code); } catch(e){}
+    lectureSeule(false);
+    $("btnOrga").textContent = "🔓 Organisateur (se déconnecter)";
+  }
+  function demarrer(){
+    lectureSeule(true);
+    dl = {save:function(o){
+      var url = URL.createObjectURL(o.data), a = document.createElement("a");
+      a.href = url; a.download = o.filename; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
+      return Promise.resolve({status:"saved"});
+    }};
+    $("btnOrga").addEventListener("click", function(){
+      if(codeOrga){ deverrouiller(); return; }
+      $("orgaCode").value = ""; $("orgaErr").textContent = "";
+      var m = $("orgaDlg"); if(m.showModal) m.showModal(); else m.setAttribute("open","");
+    });
+    $("orgaNon").addEventListener("click", function(){ var m = $("orgaDlg"); if(m.close) m.close(); else m.removeAttribute("open"); });
+    $("orgaForm").addEventListener("submit", function(e){
+      e.preventDefault();
+      var code = $("orgaCode").value;
+      codeOrga = code;
+      api.ecrire("POST", {action:"verif"}).then(function(){
+        verrouillerOk(code);
+        var m = $("orgaDlg"); if(m.close) m.close(); else m.removeAttribute("open");
+        bandeau("Mode organisateur activé.", "ok", 3000);
+      }).catch(function(err){
+        codeOrga = "";
+        $("orgaErr").textContent = (err && err.code === "unauthorized") ? "Code incorrect." : "Vérification impossible, réessaie.";
+      });
+    });
+    bandeau("Chargement du calendrier partagé…", "info");
+    charger();
+    setInterval(synchro, 10000);
+    document.addEventListener("visibilitychange", synchro);
+    var memo = ""; try { memo = localStorage.getItem("codeOrga") || ""; } catch(e){}
+    if(memo){
+      codeOrga = memo;
+      api.ecrire("POST", {action:"verif"}).then(function(){ verrouillerOk(memo); }).catch(function(){ deverrouiller(); });
+    }
+  }
+  function demanderConfirmation(txt, oui){
+    $("confirmTxt").textContent = txt;
+    var m = $("confirmDlg");
+    if(m.showModal) m.showModal(); else m.setAttribute("open","");
+    function fermer(){ if(m.close) m.close(); else m.removeAttribute("open"); }
+    $("confirmOui").onclick = function(){ fermer(); oui(); };
+    $("confirmNon").onclick = fermer;
+  }
+  function p2(n){ return (n<10?"0":"")+n; }
+  function iso(a,m,j){ return a+"-"+p2(m+1)+"-"+p2(j); }
+  function fr(s){ var p = s.split("-"); return p[2]+"/"+p[1]+"/"+p[0]; }
+  function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+
+  function trier(){ return tournois.slice().sort(function(a,b){ return a.debut<b.debut?-1:a.debut>b.debut?1:0; }); }
+
+  /* ---------- Calendrier ---------- */
+  function dessiner(){
+    $("moisTitre").textContent = MOIS[vue.m]+" "+vue.a;
+    $("titrePrint").textContent = "Calendrier des tournois de beach tennis — "+MOIS[vue.m]+" "+vue.a;
+    var g = $("grille"); g.innerHTML = "";
+    JOURS.forEach(function(j){ var d = document.createElement("div"); d.className="jsem"; d.textContent=j; g.appendChild(d); });
+    var premier = new Date(vue.a, vue.m, 1);
+    var decal = (premier.getDay()+6)%7;
+    var debutGrille = new Date(vue.a, vue.m, 1-decal);
+    var auj = iso(now.getFullYear(), now.getMonth(), now.getDate());
+    var liste = trier();
+    for(var i=0;i<42;i++){
+      var d = new Date(debutGrille.getFullYear(), debutGrille.getMonth(), debutGrille.getDate()+i);
+      if(i>=35 && d.getMonth()!==vue.m) break;
+      var s = iso(d.getFullYear(), d.getMonth(), d.getDate());
+      var cell = document.createElement("div");
+      cell.className = "jour"+(d.getMonth()!==vue.m?" hors":"")+(s===auj?" auj":"");
+      var n = document.createElement("div"); n.className="num"; n.textContent=d.getDate(); cell.appendChild(n);
+      liste.forEach(function(t){
+        if(t.debut<=s && s<=t.fin){
+          var c = document.createElement("button");
+          c.type="button"; c.className="chip "+cl(t);
+          c.textContent = t.nom; c.title = t.nom+" — "+libelle(t)+" ("+fr(t.debut)+(t.fin!==t.debut?" au "+fr(t.fin):"")+")";
+          c.addEventListener("click", function(){ detail(t.id); });
+          cell.appendChild(c);
+        }
+      });
+      g.appendChild(cell);
+    }
+  }
+
+  /* ---------- Liste ---------- */
+  function dessinerListe(){
+    var l = trier();
+    if(!l.length){ $("liste").innerHTML = '<div class="vide">Aucun tournoi pour l\'instant. Ajoutez-en un avec le formulaire.</div>'; return; }
+    var h = '<table><thead><tr><th>Affiche</th><th>Tournoi</th><th>Catégorie</th><th>Dates</th><th>Lieu</th><th class="col-actions"></th></tr></thead><tbody>';
+    l.forEach(function(t){
+      h += '<tr><td>'+(t.img?'<img class="mini" src="'+t.img+'" data-id="'+t.id+'" alt="Affiche">':'')+'</td>'
+        + '<td><strong>'+esc(t.nom)+'</strong></td>'
+        + '<td>'+tagsHtml(t)+'</td>'
+        + '<td>'+fr(t.debut)+(t.fin!==t.debut?' → '+fr(t.fin):'')+'</td>'
+        + '<td>'+esc(t.lieu||"")+'</td>'
+        + '<td class="col-actions"><button class="lien" data-edit="'+t.id+'">Modifier</button><button class="lien sup" data-del="'+t.id+'">Supprimer</button></td></tr>';
+    });
+    $("liste").innerHTML = h+'</tbody></table>';
+  }
+
+  function tout(){ dessiner(); dessinerListe(); }
+
+  /* ---------- Détail ---------- */
+  function detail(id){
+    var t = tournois.filter(function(x){return x.id===id;})[0]; if(!t) return;
+    $("modalContenu").innerHTML = '<h2 style="margin:0 0 6px">'+esc(t.nom)+'</h2>'
+      + tagsHtml(t)
+      + '<div style="margin-top:6px">'+fr(t.debut)+(t.fin!==t.debut?' au '+fr(t.fin):'')+'</div>'
+      + (t.lieu?'<div style="color:#6b7280;margin-top:4px">'+esc(t.lieu)+'</div>':'')
+      + (t.img?'<img src="'+t.img+'" alt="Affiche de '+esc(t.nom)+'">':'')
+      + '<button type="button" class="btn-ok" style="margin-top:8px" data-edit-modal="'+t.id+'">Modifier ce tournoi</button>';
+    var m = $("modal");
+    if(m.showModal) m.showModal(); else m.setAttribute("open","");
+  }
+  $("fermer").addEventListener("click", function(){ var m=$("modal"); if(m.close) m.close(); else m.removeAttribute("open"); });
+  $("modal").addEventListener("click", function(e){ if(e.target===this && this.close) this.close(); });
+
+  /* ---------- Formulaire ---------- */
+  function reduireImage(file, cb){
+    var r = new FileReader();
+    r.onload = function(){
+      var im = new Image();
+      im.onload = function(){
+        function dessin(max){
+          var k = Math.min(1, max/Math.max(im.width, im.height));
+          var c = document.createElement("canvas");
+          c.width = Math.round(im.width*k); c.height = Math.round(im.height*k);
+          c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+          return c;
+        }
+        var petit = dessin(700).toDataURL("image/jpeg",0.65);
+        dessin(1000).toBlob(function(b){ cb(petit, b); }, "image/jpeg", 0.82);
+      };
+      im.onerror = function(){ $("erreur").textContent = "Image illisible."; };
+      im.src = r.result;
+    };
+    r.readAsDataURL(file);
+  }
+  function majApercu(){
+    $("apercu").style.display = imgData ? "block" : "none";
+    $("apercu").src = imgData || "";
+    $("retirerImg").style.display = imgData ? "inline-block" : "none";
+  }
+  $("affiche").addEventListener("change", function(){
+    var f = this.files && this.files[0]; if(!f) return;
+    reduireImage(f, function(d, b){ imgData = d; imgBlob = b; majApercu(); });
+  });
+  $("retirerImg").addEventListener("click", function(){ imgData=""; imgBlob=null; $("affiche").value=""; majApercu(); });
+
+  $("debut").addEventListener("change", function(){ if(!$("fin").value || $("fin").value < this.value) $("fin").value = this.value; });
+
+  function reinit(){
+    editId = null; imgData = ""; imgBlob = null;
+    $("form").reset(); majApercu();
+    $("formTitre").textContent = "Ajouter un tournoi";
+    $("btnOk").textContent = "Ajouter au calendrier";
+    $("btnAnnuler").style.display = "none";
+    $("erreur").textContent = "";
+  }
+  $("btnAnnuler").addEventListener("click", reinit);
+
+  function enregistrer(t){
+    return api.ecrire("POST", {action:"save", item:t}).then(function(r){
+      var trouve = false;
+      tournois = tournois.map(function(x){ if(x.id === t.id){ trouve = true; return normaliser(t); } return x; });
+      if(!trouve) tournois.push(normaliser(t));
+      derniereV = r.v;
+    });
+  }
+  $("form").addEventListener("submit", function(e){
+    e.preventDefault();
+    var nom = $("nom").value.trim(), debut = $("debut").value, fin = $("fin").value;
+    var cats = Array.prototype.map.call(document.querySelectorAll('input[name="genre"]:checked'), function(i){return i.value;});
+    var ages = Array.prototype.map.call(document.querySelectorAll('input[name="age"]:checked'), function(i){return i.value;});
+    if(!cats.length){ $("erreur").textContent = "Choisissez au moins une catégorie (Hommes, Femmes, Mixte ou Jeune)."; return; }
+    if(!nom || !debut || !fin){ $("erreur").textContent = "Nom et dates sont obligatoires."; return; }
+    if(fin < debut){ $("erreur").textContent = "La date de fin précède la date de début."; return; }
+    if(!codeOrga){ $("erreur").textContent = "Active le mode organisateur (code) pour modifier."; return; }
+    var t = {id: editId || ("t"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)), nom:nom, cats:cats, ages:ages, ligue:document.querySelector('input[name="ligue"]:checked').value, debut:debut, fin:fin, lieu:$("lieu").value.trim(), img:imgData};
+    var bouton = $("btnOk"); bouton.disabled = true; $("erreur").textContent = "";
+    var etape = Promise.resolve();
+    if(imgBlob){
+      etape = (assetsApi ? assetsApi.upload(imgBlob).then(function(r){ t.img = "/_blob/"+r.id; }) : Promise.resolve())
+        .catch(function(){ /* repli : petite image intégrée */ });
+    }
+    etape.then(function(){ return enregistrer(t); }).then(function(){
+      var p = debut.split("-"); vue = {a:+p[0], m:+p[1]-1};
+      reinit(); tout();
+      bandeau("Tournoi enregistré pour tout le monde.", "ok", 3500);
+    }).catch(function(err){
+      var c = err && err.code;
+      $("erreur").textContent = c === "unauthorized" ? "Code organisateur refusé : réactive le mode organisateur."
+        : c === "invalid_argument" ? "Données refusées par le serveur (nom trop long ou image trop lourde ?)."
+        : "Enregistrement impossible, réessaie dans un instant.";
+    }).then(function(){ bouton.disabled = false; });
+  });
+
+  function modifier(id){
+    var t2 = tournois.filter(function(x){return x.id===id;})[0]; if(!t2) return;
+    editId = t2.id; imgData = t2.img || ""; imgBlob = null;
+    $("nom").value = t2.nom; $("debut").value = t2.debut; $("fin").value = t2.fin; $("lieu").value = t2.lieu || "";
+    document.querySelectorAll('input[name="genre"]').forEach(function(i){ i.checked = t2.cats.indexOf(i.value)>-1; });
+    document.querySelectorAll('input[name="age"]').forEach(function(i){ i.checked = t2.ages.indexOf(i.value)>-1; });
+    document.querySelectorAll('input[name="ligue"]').forEach(function(i){ i.checked = i.value === (t2.ligue || ""); });
+    majApercu();
+    $("formTitre").textContent = "Modifier le tournoi";
+    $("btnOk").textContent = "Enregistrer les modifications";
+    $("btnAnnuler").style.display = "inline-block";
+    $("erreur").textContent = "";
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+  $("modalContenu").addEventListener("click", function(e){
+    var id = e.target.dataset && e.target.dataset.editModal;
+    if(id){ var m=$("modal"); if(m.close) m.close(); else m.removeAttribute("open"); modifier(id); }
+  });
+  $("liste").addEventListener("click", function(e){
+    var el = e.target;
+    if(el.dataset.del){
+      var t = tournois.filter(function(x){return x.id===el.dataset.del;})[0];
+      if(t && codeOrga){
+        demanderConfirmation("Supprimer « "+t.nom+" » pour tout le monde ?", function(){
+          api.ecrire("DELETE", {id:t.id}).then(function(r){
+            tournois = tournois.filter(function(x){ return x.id !== t.id; });
+            derniereV = r.v; tout();
+            if(editId===t.id) reinit();
+          }).catch(function(){ bandeau("Suppression impossible (code refusé ?).", "warn", 5000); });
+        });
+      }
+    } else if(el.dataset.edit){ modifier(el.dataset.edit);
+    } else if(el.classList.contains("mini")){ detail(el.dataset.id); }
+  });
+
+  /* ---------- Navigation ---------- */
+  $("prec").addEventListener("click", function(){ vue.m--; if(vue.m<0){vue.m=11;vue.a--;} dessiner(); });
+  $("suiv").addEventListener("click", function(){ vue.m++; if(vue.m>11){vue.m=0;vue.a++;} dessiner(); });
+  $("auj").addEventListener("click", function(){ vue={a:now.getFullYear(), m:now.getMonth()}; dessiner(); });
+
+  /* ---------- Export PDF (par saison sportive : septembre à août) ---------- */
+  var RVB = {H:[29,78,216], F:[190,24,93], M:[124,58,237], J:[234,88,12], X:[14,116,144], P:[234,179,8], L:[22,163,74]};
+  var MOIS_MAJ = MOIS.map(function(m){ return m.charAt(0).toUpperCase()+m.slice(1); });
+  function saisonDe(s){ var a = +s.slice(0,4), m = +s.slice(5,7); return m >= 9 ? a : a-1; }
+  function saisonsDispo(){
+    var n = new Date(), cur = n.getMonth() >= 8 ? n.getFullYear() : n.getFullYear()-1, s = {};
+    s[cur] = 1; s[cur+1] = 1;
+    tournois.forEach(function(t){ s[saisonDe(t.debut)] = 1; s[saisonDe(t.fin)] = 1; });
+    return {cur:cur, liste:Object.keys(s).map(Number).sort(function(a,b){return a-b;})};
+  }
+  function dansSaison(a){ var d = a+"-09-01", f = (a+1)+"-08-31"; return trier().filter(function(t){ return t.debut <= f && t.fin >= d; }); }
+  function plage(t){ return t.debut === t.fin ? fr(t.debut) : fr(t.debut)+" au "+fr(t.fin); }
+
+  function genererPdf(JsPDF, a){
+    var liste = dansSaison(a), doc = new JsPDF({orientation:"landscape", unit:"mm", format:"a4"});
+    var W = 297, H = 210, M = 10, saison = "Saison "+a+"-"+(a+1);
+    var JS = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
+    function tronquer(txt, maxW){
+      if(doc.getTextWidth(txt) <= maxW) return txt;
+      while(txt.length > 1 && doc.getTextWidth(txt+"...") > maxW) txt = txt.slice(0,-1);
+      return txt+"...";
+    }
+    function bandeauPage(titre, grand){
+      doc.setFillColor(14,116,144); doc.rect(0,0,W,22,"F");
+      doc.setTextColor(255,255,255);
+      doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.text("Calendrier des tournois de beach tennis", M, 8.5);
+      doc.setFont("helvetica","bold"); doc.setFontSize(grand); doc.text(titre, M, 17.5);
+      doc.setFont("helvetica","normal"); doc.setFontSize(11); doc.text(saison, W-M, 17.5, {align:"right"});
+    }
+    function legende(){
+      var items = [["H","Hommes"],["F","Femmes"],["M","Mixte"],["J","Jeune"],["X","Plusieurs catégories"],["P","Ligue PDL"],["L","Autres ligues"]];
+      var x = M, y = H-7;
+      doc.setFont("helvetica","normal"); doc.setFontSize(8);
+      items.forEach(function(it){
+        var c = RVB[it[0]]; doc.setFillColor(c[0],c[1],c[2]); doc.roundedRect(x, y-2.6, 3.4, 3.4, 0.6, 0.6, "F");
+        doc.setTextColor(60,60,60); doc.text(it[1], x+5, y);
+        x += 5 + doc.getTextWidth(it[1]) + 7;
+      });
+    }
+    function iso(d){ return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate()); }
+
+    function pageMois(an, m){
+      bandeauPage(MOIS_MAJ[m]+" "+an, 20);
+      var decal = (new Date(an,m,1).getDay()+6)%7, nb = new Date(an,m+1,0).getDate();
+      var sem = Math.ceil((decal+nb)/7), cw = (W-2*M)/7, gy = 27, hh = 7, top = gy+hh;
+      var rh = Math.min(30, (H-14-top)/sem);
+      doc.setLineWidth(0.2); doc.setDrawColor(205,197,180);
+      doc.setFillColor(240,234,220); doc.rect(M, gy, W-2*M, hh, "FD");
+      doc.setFont("helvetica","bold"); doc.setFontSize(9); doc.setTextColor(60,60,60);
+      JS.forEach(function(j,c){ doc.text(j, M+c*cw+cw/2, gy+4.8, {align:"center"}); });
+      for(var w=0; w<sem; w++){
+        var y0 = top + w*rh, cols = [];
+        for(var c=0; c<7; c++){
+          var jour = w*7+c-decal+1, x = M+c*cw, d = new Date(an, m, jour), hors = jour < 1 || jour > nb;
+          cols.push(iso(d));
+          if(hors){ doc.setFillColor(247,245,238); doc.rect(x, y0, cw, rh, "FD"); } else { doc.setFillColor(255,255,255); doc.rect(x, y0, cw, rh, "FD"); }
+          doc.setFont("helvetica","bold"); doc.setFontSize(8); if(hors) doc.setTextColor(170,164,148); else doc.setTextColor(40,40,40);
+          doc.text(String(d.getDate()), x+1.6, y0+4);
+        }
+        var lanes = [], cache = 0, bh = 5, gap = 0.9, maxL = Math.floor((rh-6)/(bh+gap)), cachesParCol = [0,0,0,0,0,0,0];
+        liste.forEach(function(t){
+          var sc = -1, ec = -1;
+          for(var c2=0; c2<7; c2++){ if(cols[c2] >= t.debut && cols[c2] <= t.fin){ if(sc < 0) sc = c2; ec = c2; } }
+          if(sc < 0) return;
+          var l = 0; while(lanes[l] !== undefined && lanes[l] >= sc) l++;
+          lanes[l] = ec;
+          if(l >= maxL){ for(var c3=sc; c3<=ec; c3++) cachesParCol[c3]++; return; }
+          var bx = M+sc*cw+0.7, bw = (ec-sc+1)*cw-1.4, by = y0+6+l*(bh+gap), col = RVB[cl(t)];
+          doc.setFillColor(col[0],col[1],col[2]); doc.roundedRect(bx, by, bw, bh, 1, 1, "F");
+          doc.setFont("helvetica","bold"); doc.setFontSize(7.5);
+          if(cl(t) === "P") doc.setTextColor(40,40,40); else doc.setTextColor(255,255,255);
+          doc.text(tronquer(t.nom, bw-3), bx+1.6, by+3.55);
+        });
+        doc.setFont("helvetica","normal"); doc.setFontSize(7); doc.setTextColor(110,110,110);
+        cachesParCol.forEach(function(n,c4){ if(n > 0) doc.text("+"+n, M+(c4+1)*cw-1.5, y0+rh-1.3, {align:"right"}); });
+      }
+    }
+
+    function pageListe(){
+      var cx = [M, M+50, M+142, M+232], cwid = [48, 90, 88, 45], rowH = 9, y;
+      function enTete(premiere){
+        bandeauPage("Liste des tournois", 20);
+        y = 27;
+        doc.setFillColor(240,234,220); doc.rect(M, y, W-2*M, 8, "F");
+        doc.setFont("helvetica","bold"); doc.setFontSize(9); doc.setTextColor(60,60,60);
+        ["Dates","Tournoi","Catégories","Lieu"].forEach(function(t,i){ doc.text(t, cx[i]+(i===0?3:0), y+5.4); });
+        y += 8;
+      }
+      enTete();
+      if(!liste.length){ doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(110,110,110); doc.text("Aucun tournoi cette saison.", M, y+8); return; }
+      liste.forEach(function(t, i){
+        if(y+rowH > H-14){ legende(); doc.addPage(); enTete(); }
+        if(i%2 === 0){ doc.setFillColor(251,249,243); doc.rect(M, y, W-2*M, rowH, "F"); }
+        var col = RVB[cl(t)]; doc.setFillColor(col[0],col[1],col[2]); doc.rect(M, y, 1.6, rowH, "F");
+        doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(50,50,50);
+        doc.text(tronquer(plage(t), cwid[0]-4), cx[0]+3, y+5.8);
+        doc.setFont("helvetica","bold"); doc.setTextColor(25,25,25); doc.text(tronquer(t.nom, cwid[1]-3), cx[1], y+5.8);
+        doc.setFont("helvetica","normal"); doc.setTextColor(50,50,50); doc.text(tronquer(libelle(t), cwid[2]-3), cx[2], y+5.8);
+        doc.text(tronquer(t.lieu || "", cwid[3]), cx[3], y+5.8);
+        y += rowH;
+      });
+    }
+
+    for(var i=0; i<12; i++){
+      var m = (8+i)%12, an = m >= 8 ? a : a+1;
+      if(i > 0) doc.addPage();
+      pageMois(an, m);
+    }
+    doc.addPage(); pageListe();
+    var n = doc.getNumberOfPages();
+    for(var k=1; k<=n; k++){
+      doc.setPage(k); legende();
+      doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(110,110,110);
+      doc.text("Page "+k+" / "+n, W-M, H-7, {align:"right"});
+    }
+    return doc;
+  }
+  window.__genererPdf = genererPdf;
+
+  function majInfoSaison(){
+    var a = +$("saisonSel").value, n = dansSaison(a).length;
+    $("saisonInfo").textContent = n ? n+" tournoi"+(n>1?"s":"")+" sur cette saison." : "Aucun tournoi sur cette saison.";
+    $("pdfOui").disabled = !n;
+  }
+  function fermerPdf(){ var m = $("pdfDlg"); if(m.close) m.close(); else m.removeAttribute("open"); }
+  $("btnPdf").addEventListener("click", function(){
+    if(!tournois.length){ bandeau("Ajoutez au moins un tournoi avant d'exporter.", "warn", 4000); return; }
+    if(!window.jspdf){ bandeau("La bibliothèque PDF n'a pas pu se charger (connexion ?). Réessaie plus tard.", "warn", 6000); return; }
+    var s = saisonsDispo(), sel = $("saisonSel");
+    sel.innerHTML = s.liste.map(function(a){ return '<option value="'+a+'"'+(a===s.cur?' selected':'')+'>'+a+' - '+(a+1)+'  (septembre '+a+' à août '+(a+1)+')</option>'; }).join("");
+    majInfoSaison();
+    var m = $("pdfDlg"); if(m.showModal) m.showModal(); else m.setAttribute("open","");
+  });
+  $("saisonSel").addEventListener("change", majInfoSaison);
+  $("pdfNon").addEventListener("click", fermerPdf);
+  $("pdfOui").addEventListener("click", function(){
+    var a = +$("saisonSel").value; fermerPdf();
+    bandeau("Création du PDF…", "info");
+    setTimeout(function(){
+      var doc;
+      try { doc = genererPdf(window.jspdf.jsPDF, a); } catch(e){ bandeau("Création du PDF impossible.", "warn", 5000); return; }
+      dl.save({filename:"calendrier-beach-tennis-saison-"+a+"-"+(a+1)+".pdf", data:doc.output("blob")})
+        .then(function(){ bandeau("PDF prêt.", "ok", 3000); })
+        .catch(function(err){ if(err && err.code === "declined") bandeau(""); else bandeau("Export PDF impossible.", "warn", 5000); });
+    }, 30);
+  });
+
+  /* ---------- Export Excel (.xlsx sans bibliothèque) ---------- */
+  var CRC = (function(){ var t=[],c,n,k; for(n=0;n<256;n++){ c=n; for(k=0;k<8;k++) c = c&1 ? 0xEDB88320^(c>>>1) : c>>>1; t[n]=c>>>0; } return t; })();
+  function crc32(b){ var c=0xFFFFFFFF; for(var i=0;i<b.length;i++) c = CRC[(c^b[i])&255]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+  function u16(n){ return [n&255,(n>>>8)&255]; }
+  function u32(n){ return [n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255]; }
+  function zip(fichiers){
+    var enc = new TextEncoder(), parts = [], central = [], offset = 0;
+    fichiers.forEach(function(f){
+      var nom = enc.encode(f.nom), data = enc.encode(f.contenu), crc = crc32(data);
+      var loc = [].concat(u32(0x04034b50),u16(20),u16(0x0800),u16(0),u16(0),u16(0x21),u32(crc),u32(data.length),u32(data.length),u16(nom.length),u16(0));
+      parts.push(new Uint8Array(loc), nom, data);
+      var cen = [].concat(u32(0x02014b50),u16(20),u16(20),u16(0x0800),u16(0),u16(0),u16(0x21),u32(crc),u32(data.length),u32(data.length),u16(nom.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset));
+      central.push(new Uint8Array(cen), nom);
+      offset += loc.length + nom.length + data.length;
+    });
+    var taille = 0; central.forEach(function(c){ taille += c.length; });
+    var fin = [].concat(u32(0x06054b50),u16(0),u16(0),u16(fichiers.length),u16(fichiers.length),u32(taille),u32(offset),u16(0));
+    return new Blob(parts.concat(central, [new Uint8Array(fin)]), {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  }
+  function serie(s){ var p=s.split("-"); return Math.round((Date.UTC(+p[0],+p[1]-1,+p[2]) - Date.UTC(1899,11,30))/86400000); }
+  function xe(s){ return esc(s); }
+  function cellTxt(ref, v, st){ return '<c r="'+ref+'" t="inlineStr"'+(st?' s="'+st+'"':'')+'><is><t xml:space="preserve">'+xe(v)+'</t></is></c>'; }
+  function cellNum(ref, v, st){ return '<c r="'+ref+'" s="'+st+'"><v>'+v+'</v></c>'; }
+
+  function exporterXlsx(){
+    if(!tournois.length){ bandeau("Ajoutez au moins un tournoi avant d'exporter.", "warn", 4000); return; }
+    var l = trier();
+    var rows = '<row r="1">'+["Tournoi","Catégorie","Âge","Ligue","Début","Fin","Durée (jours)","Lieu"].map(function(h,i){ return cellTxt("ABCDEFGH"[i]+"1", h, 2); }).join("")+'</row>';
+    l.forEach(function(t,i){
+      var r = i+2;
+      rows += '<row r="'+r+'">'+cellTxt("A"+r,t.nom)+cellTxt("B"+r,t.cats.join(", "))+cellTxt("C"+r,t.ages.join(", "))+cellTxt("D"+r,t.ligue==="PDL"?"Ligue PDL":t.ligue==="Autre"?"Autre ligue":"")+cellNum("E"+r,serie(t.debut),1)+cellNum("F"+r,serie(t.fin),1)
+           + '<c r="G'+r+'"><f>F'+r+'-E'+r+'+1</f><v>'+(serie(t.fin)-serie(t.debut)+1)+'</v></c>'+cellTxt("H"+r,t.lieu||"")+'</row>';
+    });
+    var sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+      + '<cols><col min="1" max="1" width="34" customWidth="1"/><col min="2" max="2" width="22" customWidth="1"/><col min="3" max="3" width="16" customWidth="1"/><col min="4" max="4" width="14" customWidth="1"/><col min="5" max="6" width="13" customWidth="1"/><col min="7" max="7" width="14" customWidth="1"/><col min="8" max="8" width="28" customWidth="1"/></cols>'
+      + '<sheetData>'+rows+'</sheetData></worksheet>';
+    var styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+      + '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>'
+      + '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>'
+      + '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+      + '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+      + '<cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="14" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs></styleSheet>';
+    var f = [
+      {nom:"[Content_Types].xml", contenu:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'},
+      {nom:"_rels/.rels", contenu:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
+      {nom:"xl/workbook.xml", contenu:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Tournois" sheetId="1" r:id="rId1"/></sheets></workbook>'},
+      {nom:"xl/_rels/workbook.xml.rels", contenu:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
+      {nom:"xl/styles.xml", contenu:styles},
+      {nom:"xl/worksheets/sheet1.xml", contenu:sheet}
+    ];
+    dl.save({filename:"tournois-beach-tennis.xlsx", data:zip(f)}).then(function(){
+      bandeau("Fichier Excel prêt.", "ok", 3000);
+    }).catch(function(err){
+      if(!(err && err.code === "declined")) bandeau("Export Excel impossible.", "warn", 5000);
+    });
+  }
+  $("btnXlsx").addEventListener("click", exporterXlsx);
+
+  majApercu(); tout(); demarrer();
+})();
+</script>
+</body>
+</html>
